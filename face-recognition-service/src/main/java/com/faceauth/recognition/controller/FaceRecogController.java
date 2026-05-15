@@ -16,7 +16,7 @@ public class FaceRecogController {
 		record response(String status) {}
 		return new response("Running");
 	}
-	@GetMapping("/opencv")
+	@GetMapping("/face")
 	public void initOpenCV() {
 		this.service.captureImage(filePath);
 		this.service.detectFaces(filePath);

@@ -1,20 +1,27 @@
 package com.faceauth.recognition.service;
 
 import org.bytedeco.opencv.opencv_objdetect.CascadeClassifier;
+import com.faceauth.recognition.model.HaarcascadeClassifiers;
 
+import org.bytedeco.opencv.global.opencv_highgui;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.global.opencv_imgproc;
+import org.bytedeco.opencv.opencv_core.CvArr;
+import org.bytedeco.opencv.opencv_core.CvArrArray;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.Point;
 import org.bytedeco.opencv.opencv_core.Rect;
 import org.bytedeco.opencv.opencv_core.RectVector;
 import org.bytedeco.opencv.opencv_core.Scalar;
-import org.bytedeco.opencv.opencv_face.LBPHFaceRecognizer;
 import org.bytedeco.opencv.opencv_videoio.VideoCapture;
+import org.opencv.highgui.HighGui;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class FaceRecogService {
-	private CascadeClassifier faceCascade = new CascadeClassifier("haarcascade_frontalface_default.xml");
+
+	@Autowired private HaarcascadeClassifiers classifiers;
 	private VideoCapture camera;
 	private int errorCount = 0;
 	
@@ -53,14 +60,30 @@ public class FaceRecogService {
 	}
 	
 	public void detectFaces(String filePath) {
+		System.out.println("DETECTING FACES");
 		Mat src = opencv_imgcodecs.imread(filePath);
+		Mat gray = new Mat();
+		opencv_imgproc.cvtColor(src, gray, opencv_imgproc.COLOR_BGR2GRAY);
 		RectVector detections = new RectVector();
-		this.faceCascade.detectMultiScale(src, detections);
-		long detectionBufferSize = detections.size();
-		for(long i=0;i<detectionBufferSize;i++) {
-			Rect rect = detections.get(i);
-			opencv_imgproc.rectangle(src, rect, new Scalar(0, 255, 0, 0));
+		CascadeClassifier[] classifiers = this.classifiers.getFaceClassifiers();
+		boolean detected = false;
+		for(int j=classifiers.length-1;j>=0;j--) {
+			System.out.println("EXTRACTING NEXT CASCADE CLASSIFIER ["+j+"] REMAINING");
+			classifiers[j].detectMultiScale(gray, detections);
+			long detectionBufferSize = detections.size();
+			for(long i=0;i<detectionBufferSize;i++) {
+				detected = true;
+				System.out.println("DETECTED FACE ["+i+"]");
+				Rect rect = detections.get(i);
+				opencv_imgproc.putText(src, "FACE_DETECTED_BY_CLASSIFIER ["+j+"]", new Point(rect), 1, 1, new Scalar(0, 255, 0, 0));
+				opencv_imgproc.rectangle(src, rect, new Scalar(0, 255, 0, 0));
+				System.out.println("PLOTTED RECTANGLE AT FACE ["+i+"]");
+			}
 		}
+		if(detected) System.out.println("FACE(S) DETECTED");
 		opencv_imgcodecs.imwrite(filePath, src);
+		opencv_highgui.imshow("show", src);
+		opencv_highgui.waitKey(5000);
+		opencv_highgui.destroyWindow("show");
 	}
 }
