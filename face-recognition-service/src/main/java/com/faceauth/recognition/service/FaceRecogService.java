@@ -1,14 +1,16 @@
 package com.faceauth.recognition.service;
 
 import org.bytedeco.opencv.opencv_objdetect.CascadeClassifier;
-import org.bytedeco.opencv.opencv_text.IntVector;
 
+import com.faceauth.recognition.model.FaceIDRepo;
+import com.faceauth.recognition.model.FaceMatrixRepo;
+//import com.faceauth.recognition.model.FaceIDRepo;
+//import com.faceauth.recognition.model.FaceMatrixRepo;
 import com.faceauth.recognition.model.HaarcascadeClassifiers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_highgui;
@@ -28,6 +30,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class FaceRecogService {
+	@Autowired private FaceIDRepo faceIdRepo;
+	@Autowired private FaceMatrixRepo faceMatrixRepo;
+	@Autowired private MatConvertor matConvertor;
 
 	@Autowired private HaarcascadeClassifiers classifiers;
 	private LBPHFaceRecognizer recognizer = LBPHFaceRecognizer.create();
@@ -178,6 +183,7 @@ public class FaceRecogService {
 	}
 	
 	public void trainFaceRecognition() {
+		
 		Mat labels = new Mat(this.trainingLabels.size(), 1, opencv_core.CV_32SC1);
 		try(IntIndexer indexer = labels.createIndexer()) {
 			for(int i=0;i<this.trainingLabels.size();i++) {

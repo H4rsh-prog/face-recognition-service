@@ -28,12 +28,9 @@ public class FaceRecogController {
 	
 	@GetMapping("/face/train")
 	public void faceRecognitionRealTime() throws InterruptedException {
-		int choice = 0;
-		while(choice != -1) {
-			
-		}
+		this.service.collectFaceRecognitionData(1, "ANURAG", 20);
+		this.service.collectFaceRecognitionData(2, "HARSH", 20);
 		this.service.trainFaceRecognition();
-		Thread.sleep(2000);
 		this.service.predictFace();
 	}
 }
