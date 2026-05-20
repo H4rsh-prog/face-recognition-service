@@ -4,9 +4,8 @@ import org.bytedeco.opencv.opencv_objdetect.CascadeClassifier;
 
 import com.faceauth.recognition.model.FaceIDRepo;
 import com.faceauth.recognition.model.FaceMatrixRepo;
-//import com.faceauth.recognition.model.FaceIDRepo;
-//import com.faceauth.recognition.model.FaceMatrixRepo;
 import com.faceauth.recognition.model.HaarcascadeClassifiers;
+import com.faceauth.recognition.model.dto.TrainingSet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,17 +29,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class FaceRecogService {
-	@Autowired private FaceIDRepo faceIdRepo;
-	@Autowired private FaceMatrixRepo faceMatrixRepo;
-	@Autowired private MatConvertor matConvertor;
+	@Autowired private FaceDBService faceDBService;
 
 	@Autowired private HaarcascadeClassifiers classifiers;
 	private LBPHFaceRecognizer recognizer = LBPHFaceRecognizer.create();
 	private VideoCapture camera;
 	private int errorCount = 0;
-	private HashMap<Integer, String> labelNames = new HashMap<>();
-	private ArrayList<Integer> trainingLabels = new ArrayList<>();
-	private MatVector faces = new MatVector();
 	
 	public boolean initCamera() {
 		this.camera = new VideoCapture(0);
@@ -144,7 +138,12 @@ public class FaceRecogService {
 	}
 	
 	public void collectFaceRecognitionData(int personId, String personLabel, int sampleSize) {
-		this.labelNames.put(personId, personLabel);
+//		this.labelNames.put(personId, personLabel);
+		if(faceDBService.idExists(personId)) {
+			System.err.println("PERSON ID ALREADY EXISTS IN DATABASE");
+			return;
+		}
+		MatVector faces = new MatVector();
 		int trainingDataSetCount = 0;
 		CascadeClassifier[] classifiers = this.classifiers.getFaceClassifiers();
 		try {
@@ -166,7 +165,6 @@ public class FaceRecogService {
 						opencv_highgui.imshow(personLabel, faceResized);
 						opencv_highgui.waitKey(0);
 						faces.push_back(faceResized);
-						trainingLabels.add(personId);
 						if(trainingDataSetCount>20) {
 							break;
 						} else {
@@ -175,6 +173,7 @@ public class FaceRecogService {
 						}
 					}
 				}
+				this.faceDBService.persistFace(faces, personId, personLabel);
 			}
 		} finally {
 			opencv_highgui.destroyWindow(personLabel);
@@ -183,18 +182,13 @@ public class FaceRecogService {
 	}
 	
 	public void trainFaceRecognition() {
-		
-		Mat labels = new Mat(this.trainingLabels.size(), 1, opencv_core.CV_32SC1);
-		try(IntIndexer indexer = labels.createIndexer()) {
-			for(int i=0;i<this.trainingLabels.size();i++) {
-				indexer.put(i, 0, this.trainingLabels.get(i));
-			}
-		}
-		this.recognizer.train(faces, labels);
+		TrainingSet trainingSet = this.faceDBService.entityListToTrainingSet(this.faceDBService.getMatList());
+		this.recognizer.train(trainingSet.faces(), trainingSet.label());
 		System.out.println("MODEL TRAINED");
 	}
 	
 	public void predictFace() {
+		HashMap<Integer, String> labels = new HashMap<>();
 		CascadeClassifier[] classifiers = this.classifiers.getFaceClassifiers();
 		Mat frame = new Mat(), gray = new Mat();
 		RectVector detections = new RectVector();
@@ -211,7 +205,7 @@ public class FaceRecogService {
 						Mat faceResized = new Mat();
 						opencv_imgproc.resize(faceCropped, faceResized, new Size(100, 100));
 						int personId = this.recognizer.predict_label(faceResized);
-						opencv_imgproc.putText(frame, this.labelNames.getOrDefault(personId, "UNKNOWN"), new Point(rect), 1, 1, new Scalar(0, 255, 0, 0));
+						opencv_imgproc.putText(frame, labels.getOrDefault(personId, "UNKNOWN"), new Point(rect), 1, 1, new Scalar(0, 255, 0, 0));
 						opencv_imgproc.rectangle(frame, rect, new Scalar(0, 255, 0, 0));
 					}
 					opencv_highgui.imshow("show", frame);

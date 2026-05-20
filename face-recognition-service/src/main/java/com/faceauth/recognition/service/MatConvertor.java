@@ -1,9 +1,17 @@
 package com.faceauth.recognition.service;
 
+import java.util.ArrayList;
+
 import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.indexer.IntIndexer;
+import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.MatVector;
 import org.springframework.stereotype.Service;
+
+import com.faceauth.recognition.model.dto.FaceMatrix;
+import com.faceauth.recognition.model.dto.TrainingSet;
 
 @Service
 public class MatConvertor {
@@ -29,4 +37,5 @@ public class MatConvertor {
 	    long n = a.total() * a.channels();
 	    return aPtr.limit(n).equals(bPtr.limit(n));
 	}
+	
 }
