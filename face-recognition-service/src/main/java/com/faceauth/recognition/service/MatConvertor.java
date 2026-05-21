@@ -1,17 +1,10 @@
 package com.faceauth.recognition.service;
 
-import java.util.ArrayList;
 
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.indexer.IntIndexer;
-import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_core.MatVector;
 import org.springframework.stereotype.Service;
-
-import com.faceauth.recognition.model.dto.FaceMatrix;
-import com.faceauth.recognition.model.dto.TrainingSet;
 
 @Service
 public class MatConvertor {
@@ -26,7 +19,7 @@ public class MatConvertor {
 	
 	public static Mat fromByteArr(byte[] byteArr) {
 		Mat mat = new Mat(byteArr);
-		return opencv_imgcodecs.imdecode(mat, opencv_imgcodecs.IMREAD_COLOR);
+		return opencv_imgcodecs.imdecode(mat, opencv_imgcodecs.IMREAD_GRAYSCALE);
 	}
 	
 	public static boolean areEqual(Mat a, Mat b) {

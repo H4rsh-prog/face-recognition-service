@@ -1,10 +1,14 @@
 package com.faceauth.recognition.controller;
 
+import org.bytedeco.opencv.global.opencv_highgui;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.faceauth.recognition.service.FaceRecogService;
+
 
 @RestController
 public class FaceRecogController {
@@ -27,10 +31,19 @@ public class FaceRecogController {
 	}
 	
 	@GetMapping("/face/train")
-	public void faceRecognitionRealTime() throws InterruptedException {
-		this.service.collectFaceRecognitionData(1, "HAND", 20);
-		this.service.collectFaceRecognitionData(2, "FACE", 20);
-		this.service.trainFaceRecognition();
-		this.service.predictFace();
+	public void faceTrainingSet(@RequestParam("label") String label, @RequestParam(defaultValue = "20", name = "sample", required = false) int sampleSize) throws InterruptedException {
+		this.service.collectFaceRecognitionData(label, sampleSize);
+	}
+	
+	@GetMapping("/face/forget/{label}")
+	public void faceTrainingSetRemoval(@PathVariable("label") String label) throws InterruptedException {
+		this.service.forgetTrainingSet(label);
+	}
+	
+	@GetMapping("/face/predict")
+	public void predictFace() {
+		if(this.service.trainFaceRecognition()) {
+			this.service.predictFace();
+		}
 	}
 }
